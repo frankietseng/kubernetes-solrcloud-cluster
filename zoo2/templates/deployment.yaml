@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zoo2-lab.fullname" . }}
+  labels:
+    {{- include "zoo2-lab.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "zoo2-lab.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zoo2-lab.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ include "zoo2-lab.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: port1
+              containerPort: 2181
+              protocol: TCP
+            - name: port2
+              containerPort: 2888
+              protocol: TCP
+            - name: port3
+              containerPort: 3888
+              protocol: TCP
+          env:
+            - name: TZ
+              value: 'Asia/Taipei'
+            - name: ZOO_MY_ID
+              value: '2'
+            - name: ZOO_PORT
+              value: '2181'
+            - name: ZOO_SERVERS
+              value: 'server.1=zoo1-lab:2888:3888 server.2=0.0.0.0:2888:3888 server.3=zoo3-lab:2888:3888'
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
